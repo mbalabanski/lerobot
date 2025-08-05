@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F  # noqa: N812
 
-from lerobot.constants import OBS_ENV, OBS_ROBOT
+from lerobot.constants import OBS_STATE
 from lerobot.policies.diffusion.modeling_diffusion import DiffusionRgbEncoder
 from lerobot.policies.dit_flow.configuration_dit_flow import DiTFlowConfig
 from lerobot.policies.normalize import Normalize, Unnormalize
@@ -380,7 +380,11 @@ class DiTFlowPolicy(PreTrainedPolicy):
         action = self._queues["action"].popleft()
         return action
 
-    def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    def predict_action_chunk(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
+        return self.select_action(batch)
+
+
+    def forward(self, batch: dict[str, torch.Tensor]) -> tuple[torch.Tensor, None]:
         """Run the batch through the model and compute the loss for training or validation."""
         batch = self.normalize_inputs(batch)
         if self.config.image_features:
@@ -390,7 +394,7 @@ class DiTFlowPolicy(PreTrainedPolicy):
             )
         batch = self.normalize_targets(batch)
         loss = self.dit_flow.compute_loss(batch)
-        return {"loss": loss}
+        return loss, None
 
 
 class DiTFlowModel(nn.Module):
@@ -471,8 +475,8 @@ class DiTFlowModel(nn.Module):
 
     def _prepare_global_conditioning(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Encode image features and concatenate them all together along with the state vector."""
-        batch_size, n_obs_steps = batch[OBS_ROBOT].shape[:2]
-        global_cond_feats = [batch[OBS_ROBOT]]
+        batch_size, n_obs_steps = batch[OBS_STATE].shape[:2]
+        global_cond_feats = [batch[OBS_STATE]]
         # Extract image features.
         if self.config.image_features:
             if self.config.use_separate_rgb_encoder_per_camera:
@@ -501,8 +505,8 @@ class DiTFlowModel(nn.Module):
                 )
             global_cond_feats.append(img_features)
 
-        if self.config.env_state_feature:
-            global_cond_feats.append(batch[OBS_ENV])
+        # if self.config.env_state_feature:
+        #     global_cond_feats.append(batch[OBS_ENV])
 
         # Concatenate features then flatten to (B, global_cond_dim).
         return torch.cat(global_cond_feats, dim=-1).flatten(start_dim=1)
