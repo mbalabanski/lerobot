@@ -17,12 +17,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F  # noqa: N812
 
-from lerobot.common.constants import OBS_ENV, OBS_ROBOT
-from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionRgbEncoder
-from lerobot.common.policies.dit_flow.configuration_dit_flow import DiTFlowConfig
-from lerobot.common.policies.normalize import Normalize, Unnormalize
-from lerobot.common.policies.pretrained import PreTrainedPolicy
-from lerobot.common.policies.utils import (
+from lerobot.constants import OBS_ENV, OBS_ROBOT
+from lerobot.policies.diffusion.modeling_diffusion import DiffusionRgbEncoder
+from lerobot.policies.dit_flow.configuration_dit_flow import DiTFlowConfig
+from lerobot.policies.normalize import Normalize, Unnormalize
+from lerobot.policies.pretrained import PreTrainedPolicy
+from lerobot.policies.utils import (
     get_device_from_parameters,
     get_dtype_from_parameters,
     populate_queues,
