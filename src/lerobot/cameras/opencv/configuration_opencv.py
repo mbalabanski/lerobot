@@ -54,6 +54,7 @@ class OpenCVCameraConfig(CameraConfig):
     index_or_path: int | Path
     color_mode: ColorMode = ColorMode.RGB
     rotation: Cv2Rotation = Cv2Rotation.NO_ROTATION
+    downsample: bool = False
     warmup_s: int = 1
 
     def __post_init__(self):

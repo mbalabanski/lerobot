@@ -112,6 +112,7 @@ class OpenCVCamera(Camera):
         self.config = config
         self.index_or_path = config.index_or_path
 
+        self.downsample = config.downsample
         self.fps = config.fps
         self.color_mode = config.color_mode
         self.warmup_s = config.warmup_s
@@ -353,13 +354,16 @@ class OpenCVCamera(Camera):
             raise ValueError(
                 f"Invalid color mode '{requested_color_mode}'. Expected {ColorMode.RGB} or {ColorMode.BGR}."
             )
+        
+        if self.downsample:
+            image = cv2.resize(image, (320, 240), )
 
         h, w, c = image.shape
 
-        if h != self.capture_height or w != self.capture_width:
-            raise RuntimeError(
-                f"{self} frame width={w} or height={h} do not match configured width={self.capture_width} or height={self.capture_height}."
-            )
+        # if h != self.capture_height or w != self.capture_width:
+        #     raise RuntimeError(
+        #         f"{self} frame width={w} or height={h} do not match configured width={self.capture_width} or height={self.capture_height}."
+        #     )
 
         if c != 3:
             raise RuntimeError(f"{self} frame channels={c} do not match expected 3 channels (RGB/BGR).")
