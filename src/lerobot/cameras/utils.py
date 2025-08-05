@@ -37,6 +37,12 @@ def make_cameras_from_configs(camera_configs: dict[str, CameraConfig]) -> dict[s
             from .realsense.camera_realsense import RealSenseCamera
 
             cameras[key] = RealSenseCamera(cfg)
+        elif cfg.type == "protected":
+            # NOTE: if this throws import error please run
+            # `pip install -e src` in Deployment repo
+            from so101.cameras import ProtectedCamera
+
+            cameras[key] = ProtectedCamera(cfg)
         else:
             raise ValueError(f"The motor type '{cfg.type}' is not valid.")
 
