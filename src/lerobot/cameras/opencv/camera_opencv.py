@@ -206,6 +206,8 @@ class OpenCVCamera(Camera):
         else:
             self._validate_fps()
 
+        self.videocapture.set(cv2.CAP_PROP_AUTOFOCUS, int(self.config.enable_autofocus))
+
         default_width = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
         default_height = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
