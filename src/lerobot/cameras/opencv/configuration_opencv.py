@@ -56,6 +56,7 @@ class OpenCVCameraConfig(CameraConfig):
     rotation: Cv2Rotation = Cv2Rotation.NO_ROTATION
     downsample: bool = False
     enable_autofocus: bool = False
+    fourcc: str | None = None
     warmup_s: int = 1
 
     def __post_init__(self):
@@ -73,3 +74,9 @@ class OpenCVCameraConfig(CameraConfig):
             raise ValueError(
                 f"`rotation` is expected to be in {(Cv2Rotation.NO_ROTATION, Cv2Rotation.ROTATE_90, Cv2Rotation.ROTATE_180, Cv2Rotation.ROTATE_270)}, but {self.rotation} is provided."
             )
+        
+        if self.fourcc is not None:
+            if not isinstance(self.fourcc, str) or len(self.fourcc) != 4:
+                raise ValueError(
+                    f"`fourcc` must be a 4-character string (e.g., 'MJPG', 'YUYV'), but '{self.fourcc}' is provided."
+                )

@@ -201,6 +201,9 @@ class OpenCVCamera(Camera):
         if not self.is_connected:
             raise DeviceNotConnectedError(f"Cannot configure settings for {self} as it is not connected.")
 
+        if self.config.fourcc is not None:
+            self._validate_fourcc()
+
         if self.fps is None:
             self.fps = self.videocapture.get(cv2.CAP_PROP_FPS)
         else:
@@ -220,6 +223,23 @@ class OpenCVCamera(Camera):
         else:
             self._validate_width_and_height()
 
+    def _validate_fourcc(self) -> None:
+        """Validates and sets the camera's FOURCC code."""
+
+        fourcc_code = cv2.VideoWriter_fourcc(*self.config.fourcc)
+        success = self.videocapture.set(cv2.CAP_PROP_FOURCC, fourcc_code)
+        actual_fourcc_code = self.videocapture.get(cv2.CAP_PROP_FOURCC)
+
+        # Convert actual FOURCC code back to string for comparison
+        actual_fourcc_code_int = int(actual_fourcc_code)
+        actual_fourcc = "".join([chr((actual_fourcc_code_int >> 8 * i) & 0xFF) for i in range(4)])
+
+        if not success or actual_fourcc != self.config.fourcc:
+            logger.warning(
+                f"{self} failed to set fourcc={self.config.fourcc} (actual={actual_fourcc}, success={success}). "
+                f"Continuing with default format."
+            )
+
     def _validate_fps(self) -> None:
         """Validates and sets the camera's frames per second (FPS)."""
 
@@ -232,20 +252,23 @@ class OpenCVCamera(Camera):
     def _validate_width_and_height(self) -> None:
         """Validates and sets the camera's frame capture width and height."""
 
-        width_success = self.videocapture.set(cv2.CAP_PROP_FRAME_WIDTH, float(self.capture_width))
-        height_success = self.videocapture.set(cv2.CAP_PROP_FRAME_HEIGHT, float(self.capture_height))
+        # remove height / width checks for downsampling
 
-        actual_width = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
-        if not width_success or self.capture_width != actual_width:
-            raise RuntimeError(
-                f"{self} failed to set capture_width={self.capture_width} ({actual_width=}, {width_success=})."
-            )
+        # width_success = self.videocapture.set(cv2.CAP_PROP_FRAME_WIDTH, float(self.capture_width))
+        # height_success = self.videocapture.set(cv2.CAP_PROP_FRAME_HEIGHT, float(self.capture_height))
 
-        actual_height = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        if not height_success or self.capture_height != actual_height:
-            raise RuntimeError(
-                f"{self} failed to set capture_height={self.capture_height} ({actual_height=}, {height_success=})."
-            )
+        # actual_width = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
+        # if not width_success or self.capture_width != actual_width:
+        #     raise RuntimeError(
+        #         f"{self} failed to set capture_width={self.capture_width} ({actual_width=}, {width_success=})."
+        #     )
+
+        # actual_height = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        # if not height_success or self.capture_height != actual_height:
+        #     raise RuntimeError(
+        #         f"{self} failed to set capture_height={self.capture_height} ({actual_height=}, {height_success=})."
+        #     )
+        pass
 
     @staticmethod
     def find_cameras() -> list[dict[str, Any]]:
@@ -275,6 +298,11 @@ class OpenCVCamera(Camera):
                 default_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 default_fps = camera.get(cv2.CAP_PROP_FPS)
                 default_format = camera.get(cv2.CAP_PROP_FORMAT)
+                
+                default_fourcc_code = camera.get(cv2.CAP_PROP_FOURCC)
+                default_fourcc_code_int = int(default_fourcc_code)
+                default_fourcc = "".join([chr((default_fourcc_code_int >> 8 * i) & 0xFF) for i in range(4)])
+                
                 camera_info = {
                     "name": f"OpenCV Camera @ {target}",
                     "type": "OpenCV",
@@ -282,6 +310,7 @@ class OpenCVCamera(Camera):
                     "backend_api": camera.getBackendName(),
                     "default_stream_profile": {
                         "format": default_format,
+                        "fourcc": default_fourcc,
                         "width": default_width,
                         "height": default_height,
                         "fps": default_fps,
